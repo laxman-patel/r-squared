@@ -1,8 +1,8 @@
-#  (r-squared)
+# $r^2$ (r-squared)
 
 **Deterministic Browser Automation & Replay Engine**
 
-**** is a browser automation framework designed to solve the fragility of traditional RPA selectors. It implements a **Record → Synthesize → Replay** architecture, utilizing **Gemini 3 Flash** to convert raw user interactions into resilient, self-healing selector strategies. Unlike autonomous agents that rely on continuous LLM reasoning,  compiles workflows into deterministic JSON execution plans, ensuring low-latency replay with  API calls per workflow.
+**** $r^2$ is a browser automation framework designed to solve the fragility of traditional RPA selectors. It implements a **Record → Synthesize → Replay** architecture, utilizing **Gemini 3 Flash** to convert raw user interactions into resilient, self-healing selector strategies. Unlike autonomous agents that rely on continuous LLM reasoning,$r^2$ compiles workflows into deterministic JSON execution plans, ensuring low-latency replay with  API calls per workflow.
 
 ---
 
