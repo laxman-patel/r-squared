@@ -1,12 +1,5 @@
-import Logo from "@/assets/crx.svg";
-import { useState } from "react";
-import "./App.css";
-
 function App() {
-  const [show, setShow] = useState(false);
-  const toggle = () => setShow(!show);
-
-  return <></>;
+  return null;
 }
 
 export default App;

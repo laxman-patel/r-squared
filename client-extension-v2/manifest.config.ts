@@ -8,6 +8,10 @@ export default defineManifest({
   icons: {
     48: 'public/logo.png',
   },
+  background: {
+    service_worker: 'src/background/index.ts',
+    type: 'module',
+  },
   action: {
     default_icon: {
       48: 'public/logo.png',
@@ -17,6 +21,9 @@ export default defineManifest({
   permissions: [
     'sidePanel',
     'contentSettings',
+  ],
+  host_permissions: [
+    'http://localhost:3000/*',
   ],
   content_scripts: [{
     js: ['src/content/main.tsx'],

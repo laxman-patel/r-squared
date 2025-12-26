@@ -1,14 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./views/App.tsx";
-import { record } from "rrweb";
+import { startDomRecording } from "@/lib/dom-recorder";
 
 console.log("[CRXJS] Hello world from content script!");
 
 // --- Recording Logic ---
 
-let events: any[] = [];
-let stopFn: (() => void) | undefined;
+let stopRecording: (() => any[]) | undefined;
 let isRecording = false;
 
 // Handle messages from the popup
@@ -25,29 +24,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
 
     console.log("[Recorder] Starting recording...");
-    events = [];
     isRecording = true;
 
-    // Start rrweb recording
-    stopFn = record({
-      emit(event) {
-        events.push(event);
-      },
-      // Optimization for LLM processing: Reduce noise and file size
-      sampling: {
-        mousemove: false, // Don't record mouse path
-        scroll: 150, // Throttle scroll events
-        input: "last", // Record only final input values
-      },
-      inlineImages: false, // Don't inline images as Base64
-      inlineStylesheet: false, // Don't inline stylesheets
-      collectFonts: false, // Don't collect fonts
-      slimDOMOptions: {
-        script: true, // Remove <script> tags
-        comment: true, // Remove comments
-        headFavicon: true, // Remove favicon
-      },
-    });
+    // Start dom-recorder
+    const session = startDomRecording();
+    stopRecording = session.stop;
 
     sendResponse({ status: "started" });
   }
@@ -59,39 +40,51 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
 
     console.log("[Recorder] Stopping recording...");
-    if (stopFn) {
-      stopFn();
-      stopFn = undefined;
-    }
     isRecording = false;
 
-    // Trigger download
-    saveRecording();
+    if (stopRecording) {
+      const events = stopRecording();
+      stopRecording = undefined;
+      // Trigger download
+      saveRecording(events, message.data?.workflowName);
+    } else {
+       console.warn("[Recorder] No recorder instance found.");
+    }
 
     sendResponse({ status: "stopped" });
   }
 });
 
-function saveRecording() {
+async function saveRecording(events: any[], workflowName?: string) {
   if (events.length === 0) {
     console.warn("[Recorder] No events to save.");
     return;
   }
 
-  const blob = new Blob([JSON.stringify(events)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.style.display = "none";
-  a.href = url;
-  a.download = `session-record-${new Date().toISOString()}.json`;
-  document.body.appendChild(a);
-  a.click();
-
-  // Cleanup
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 100);
+  // Send to background script for upload
+  chrome.runtime.sendMessage(
+    {
+      type: "UPLOAD_RECORDING",
+      data: { events, workflowName },
+    },
+    (response) => {
+      if (chrome.runtime.lastError) {
+        console.error(
+          "[Recorder] Message error:",
+          chrome.runtime.lastError.message,
+        );
+        return;
+      }
+      if (response && response.success) {
+        console.log("[Recorder] Recording uploaded successfully");
+      } else {
+        console.error(
+          "[Recorder] Upload failed:",
+          response?.error || "Unknown error",
+        );
+      }
+    },
+  );
 }
 
 // --- End Recording Logic ---
