@@ -9,6 +9,8 @@ console.log("[CRXJS] Hello world from content script!");
 
 let stopRecording: (() => any[]) | undefined;
 let isRecording = false;
+let screenshotInterval: ReturnType<typeof setInterval> | undefined;
+let screenshots: { timestamp: number; dataUrl: string }[] = [];
 
 // Handle messages from the popup
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -25,10 +27,27 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     console.log("[Recorder] Starting recording...");
     isRecording = true;
+    screenshots = []; // Reset screenshots
 
     // Start dom-recorder
     const session = startDomRecording();
     stopRecording = session.stop;
+
+    // Start screenshot interval (every 2 seconds)
+    screenshotInterval = setInterval(() => {
+      chrome.runtime.sendMessage(
+        { type: "TAKE_SCREENSHOT", quality: 13 }, // Low quality 13%
+        (response) => {
+          if (chrome.runtime.lastError) return;
+          if (response && response.success && response.dataUrl) {
+            screenshots.push({
+              timestamp: Date.now(),
+              dataUrl: response.dataUrl,
+            });
+          }
+        },
+      );
+    }, 2000);
 
     sendResponse({ status: "started" });
   }
@@ -42,20 +61,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     console.log("[Recorder] Stopping recording...");
     isRecording = false;
 
+    if (screenshotInterval) {
+      clearInterval(screenshotInterval);
+      screenshotInterval = undefined;
+    }
+
     if (stopRecording) {
       const events = stopRecording();
       stopRecording = undefined;
       // Trigger download
-      saveRecording(events, message.data?.workflowName);
+      saveRecording(events, screenshots, message.data?.workflowName);
     } else {
-       console.warn("[Recorder] No recorder instance found.");
+      console.warn("[Recorder] No recorder instance found.");
     }
 
     sendResponse({ status: "stopped" });
   }
 });
 
-async function saveRecording(events: any[], workflowName?: string) {
+async function saveRecording(
+  events: any[],
+  screenshots: any[],
+  workflowName?: string,
+) {
   if (events.length === 0) {
     console.warn("[Recorder] No events to save.");
     return;
@@ -65,7 +93,7 @@ async function saveRecording(events: any[], workflowName?: string) {
   chrome.runtime.sendMessage(
     {
       type: "UPLOAD_RECORDING",
-      data: { events, workflowName },
+      data: { events, screenshots, workflowName },
     },
     (response) => {
       if (chrome.runtime.lastError) {

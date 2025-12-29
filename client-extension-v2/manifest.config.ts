@@ -21,6 +21,7 @@ export default defineManifest({
   permissions: [
     'sidePanel',
     'contentSettings',
+    'activeTab',
   ],
   host_permissions: [
     'http://localhost:3000/*',
