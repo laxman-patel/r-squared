@@ -12,9 +12,17 @@ export interface StaticFiles {
 }
 
 export interface ActionResponse {
+  reasoning: string;
+  action_type: "ClickElement" | "TypeText" | "SelectOption" | "HoverElement" | "ScrollTo" | "WaitFor" | "GoToURL" | "PressKey" | "Finish";
+  selector?: string;
+  value?: string;
+  options?: {
+    delay_ms?: number;
+    force?: boolean;
+    clear_first?: boolean;
+    scroll_into_view?: boolean;
+  };
   is_complete: boolean;
-  message?: string;
-  data?: any;
 }
 
 export async function getAction(
@@ -104,14 +112,5 @@ export async function getAction(
 
   const aiResponse = JSON.parse(content);
 
-  return {
-    is_complete: aiResponse.is_complete ?? false,
-    message: aiResponse.reasoning,
-    data: {
-      action_type: aiResponse.action_type,
-      selector: aiResponse.selector,
-      value: aiResponse.value,
-      options: aiResponse.options,
-    },
-  };
+  return aiResponse;
 }
