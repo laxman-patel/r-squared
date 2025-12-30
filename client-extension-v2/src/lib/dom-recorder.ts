@@ -1,4 +1,5 @@
 import { record, EventType, IncrementalSource } from "rrweb";
+import { snapshot } from "rrweb-snapshot";
 
 export function startDomRecording() {
   const events: any[] = [];
@@ -130,4 +131,14 @@ function simplifySnapshot(data: any) {
   return {
     node: stripNode(data.node),
   };
+}
+
+export function captureDomSnapshot(): string {
+  const domSnapshot = snapshot(document);
+  const event = {
+    type: 2,
+    timestamp: Date.now(),
+    data: simplifySnapshot(domSnapshot),
+  };
+  return JSON.stringify(event);
 }

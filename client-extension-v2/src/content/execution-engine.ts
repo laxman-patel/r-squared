@@ -73,7 +73,7 @@ async function ensureInView(element: HTMLElement): Promise<void> {
  * Dispatches native React/Vue compatible events for inputs.
  */
 function triggerInputEvents(
-  element: HTMLInputElement | HTMLTextAreaElement,
+  element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
   value: string,
 ) {
   const nativeInputValueSetter = Object.getOwnPropertyDescriptor(

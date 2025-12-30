@@ -1,7 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./views/App.tsx";
-import { startDomRecording } from "@/lib/dom-recorder";
+import { startDomRecording, captureDomSnapshot } from "@/lib/dom-recorder";
+import type { ActionPayload } from "@/lib/types";
 
 console.log("[CRXJS] Hello world from content script!");
 
@@ -47,7 +48,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           }
         },
       );
-    }, 2000);
+    }, 5000);
 
     sendResponse({ status: "started" });
   }
@@ -76,6 +77,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
 
     sendResponse({ status: "stopped" });
+  }
+
+  if (message.type === "CAPTURE_WEBCONTEXT") {
+    captureWebContext().then(sendResponse);
+    return true;
+  }
+
+  if (message.type === "EXECUTE_ACTION") {
+    executeActionInTab(message.action).then(sendResponse);
+    return true;
   }
 });
 
@@ -113,6 +124,28 @@ async function saveRecording(
       }
     },
   );
+}
+
+async function captureWebContext() {
+  const dataUrl = await chrome.runtime.sendMessage({ type: "TAKE_SCREENSHOT", quality: 50 });
+  if (!dataUrl.success) throw new Error(dataUrl.error);
+
+  const jsonl = captureDomSnapshot();
+
+  return { jsonl, image: dataUrl.dataUrl };
+}
+
+async function executeActionInTab(action: ActionPayload) {
+  const { executeAction } = await import("./execution-engine");
+  try {
+    const result = await executeAction(action);
+    return { success: true, result };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
 }
 
 // --- End Recording Logic ---

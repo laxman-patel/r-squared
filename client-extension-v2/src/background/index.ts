@@ -104,7 +104,8 @@ async function handleFetchFiles() {
       throw new Error(`Failed to fetch files: ${response.statusText}`);
     }
     const data = await response.json();
-    return { success: true, files: data.files };
+    const files = Array.isArray(data) ? data : data.workflows || [];
+    return { success: true, files };
   } catch (error) {
     console.error("Fetch files error:", error);
     return {

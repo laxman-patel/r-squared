@@ -32,3 +32,5 @@ You must output a JSON object with the following structure. Do not output text o
   "is_complete": boolean   // Set true if workflow is finished
 }
 `;
+
+export default generatePrompt;
