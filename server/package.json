@@ -10,6 +10,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@openrouter/sdk": "^0.3.11",
     "hono": "^4.11.2"
   }
 }
